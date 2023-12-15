@@ -3,28 +3,83 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace BattleBoats
 {
     internal class Board
     {
-        List<Boat> boats = new List<Boat>();
+        public List<Boat> boats = new List<Boat>();
         BoardPosition[,] boardPositions;
-        int width;
-        int height;
+        public int height;
+        public int width;
+        Symbol emptyHitSymbol;
+        Symbol emptyRevealedSymbol;
+        Symbol emptyHiddenSymbol;
 
         public Board (int width, int height)
         {
-            this.width = width;
             this.height = height;
-            this.boardPositions = new BoardPosition[width, height];
+            this.width = width;
+            this.boardPositions = new BoardPosition[this.height, this.width];
+            this.emptyHitSymbol = new Symbol('M', ConsoleColor.White);
+            this.emptyRevealedSymbol = new Symbol('.', ConsoleColor.Blue);
+            this.emptyHiddenSymbol = new Symbol('.', ConsoleColor.Blue);
 
-            for (int i = 0; i < height; i++)
+            this.UpdateBoard();
+        }
+
+        public void RandomlyAddBoats(Boat[] boats)
+        {
+            Random randomGenerator = new Random();
+
+            foreach (Boat boat in boats)
             {
-                for (int j = 0; j < width; j++)
+                do
                 {
-                    boardPositions[i, j] = new BoardPosition(i, j, 'M', '.', '.');
+                    if (randomGenerator.Next(0, 2) == 1) { boat.rotateBoat(); }
+
+                    boat.setBoatPosition((
+                        randomGenerator.Next(0, this.height + Boat.MAX_BOAT_SIZE),
+                        randomGenerator.Next(0, this.width + Boat.MAX_BOAT_SIZE)
+                    ));
+                } while (!this.AddBoat(boat));
+            }
+        }
+
+        public bool BoatsInValidPosition()
+        {
+            for (int i = 0; i < this.boats.Count; i++)
+            {
+                for (int j = i + 1; j < this.boats.Count; j++)
+                {
+                    if (this.boats[i].Overlap(this.boats[j])) { return false;  }
                 }
+            }
+
+            return true;
+        }
+
+        // Updates all the positions on the board
+        public void UpdateBoard()
+        {
+            for (int i = 0; i < this.height; i++)
+            {
+                for (int j = 0; j < this.width; j++)
+                {
+                    boardPositions[i, j] = new BoardPosition(
+                        i,
+                        j,
+                        this.emptyHitSymbol,
+                        this.emptyRevealedSymbol,
+                        this.emptyHiddenSymbol
+                    );
+                }
+            }
+
+            foreach (Boat boat in this.boats)
+            {
+                this.PlaceBoatOnBoard(boat);
             }
         }
 
@@ -37,15 +92,12 @@ namespace BattleBoats
                 if (boat.Overlap(newBoat)) {  return false; }
             }
 
-            if (!newBoat.InsideBounds(this.width, this.height)) {  return false; }
+            if (!newBoat.InsideBounds(this.height, this.width)) {  return false; }
 
             this.boats.Add(newBoat);
 
             // Updates Boards position tile to have the properties of the boat
-            foreach (BoardPosition boatBoardPosition in newBoat.BoatPositionsToBoardPositions())
-            {
-                boardPositions[boatBoardPosition.x, boatBoardPosition.y] = boatBoardPosition;
-            }
+            this.PlaceBoatOnBoard(newBoat);
 
             return true;
         }
@@ -67,7 +119,7 @@ namespace BattleBoats
             Console.Write(" |");
             for (int i = 0; i < this.width; i++)
             {
-                  Console.Write(((i + 1) / 10 == 0 ? " " : Convert.ToString((i + 1) / 10)) + "|");
+                Console.Write(((i + 1) / 10 == 0 ? " " : Convert.ToString((i + 1) / 10)) + "|");
             }
 
             Console.Write("\n |");
@@ -78,15 +130,23 @@ namespace BattleBoats
             }
 
 
-            for (int i = 0; i < height; i++)
+            for (int i = 0; i < this.height; i++)
             {
                 Console.WriteLine();
                 Console.Write(Convert.ToChar(65 + i) + "|");
-                for (int j = 0; j < width; j++)
+                for (int j = 0; j < this.width; j++)
                 {
-                    Console.Write(boardPositions[i, j].currentSymbol(revealed));
-                    Console.Write("|");
+                    boardPositions[i, j].CurrentSymbol(revealed).ConsoleWriteSymbol();
+                    Console.Write(" ");
                 }
+            }
+        }
+
+        private void PlaceBoatOnBoard(Boat newBoat)
+        {
+            foreach (BoardPosition boatBoardPosition in newBoat.BoatPositionsToBoardPositions())
+            {
+                boardPositions[boatBoardPosition.x, boatBoardPosition.y] = boatBoardPosition;
             }
         }
     }

@@ -10,12 +10,12 @@ namespace BattleBoats
     {
         public int x;
         public int y;
-        char hitSymbol;
-        char revealedSymbol;
-        char hiddenSymbol;
+        Symbol hitSymbol;
+        Symbol revealedSymbol;
+        Symbol hiddenSymbol;
         public bool hit;
 
-        public BoardPosition (int x, int y, char hitSymbol, char revealedSymbol, char hiddenSymbol)
+        public BoardPosition (int x, int y, Symbol hitSymbol, Symbol revealedSymbol, Symbol hiddenSymbol)
         {
             this.x = x;
             this.y = y;
@@ -25,14 +25,14 @@ namespace BattleBoats
         }
 
         // Checks if the position of the tile is equal to the provided position
-        public bool equalPosition(int x, int y)
+        public bool EqualPosition(int x, int y)
         {
             return this.x == x && this.y == y;
         }
 
         // Return the symbol of the board position based on its hit state and whether the position is supposed
         // to be revealed to the player (e.g. when the player is placing their own boats)
-        public char currentSymbol(bool revealed)
+        public Symbol CurrentSymbol(bool revealed)
         {
             if (revealed) { return revealedSymbol; }
 
