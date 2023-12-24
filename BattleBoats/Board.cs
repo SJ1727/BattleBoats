@@ -1,32 +1,77 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace BattleBoats
 {
     internal class Board
     {
         public List<Boat> boats = new List<Boat>();
-        BoardPosition[,] boardPositions;
+        private BoardPosition[,] boardPositions;
+        private List<(int x, int y)> highlightedBoardPositions = new List<(int x, int y)>();
         public int height;
         public int width;
-        Symbol emptyHitSymbol;
-        Symbol emptyRevealedSymbol;
-        Symbol emptyHiddenSymbol;
+        public string title;
+        string emptyHitSymbol;
+        string emptyRevealedSymbol;
+        string emptyHiddenSymbol;
+        AnsiColor emptyHitSymbolColor = new AnsiColor(5, 5, 5);
+        AnsiColor emptyRevealedSymbolColor = new AnsiColor(0, 0, 4);
+        AnsiColor emptyHiddenSymbolColor = new AnsiColor(0, 0, 4);
+        AnsiColor HighlightColor = new AnsiColor(5, 5, 5);
 
-        public Board (int width, int height)
+        public Board(int width, int height, string title)
         {
             this.height = height;
             this.width = width;
+            this.title = title;
             this.boardPositions = new BoardPosition[this.height, this.width];
-            this.emptyHitSymbol = new Symbol('M', ConsoleColor.White);
-            this.emptyRevealedSymbol = new Symbol('.', ConsoleColor.Blue);
-            this.emptyHiddenSymbol = new Symbol('.', ConsoleColor.Blue);
+            this.emptyHitSymbol = emptyHitSymbolColor.ColorCharForeground('M');
+            this.emptyRevealedSymbol = emptyRevealedSymbolColor.ColorCharForeground('.');
+            this.emptyHiddenSymbol = emptyHiddenSymbolColor.ColorCharForeground('.');
 
-            this.UpdateBoard();
+            for (int i = 0; i < this.height; i++)
+            {
+                for (int j = 0; j < this.width; j++)
+                {
+                    this.boardPositions[i, j] = new BoardPosition(
+                        i,
+                        j,
+                        this.emptyHitSymbol,
+                        this.emptyRevealedSymbol,
+                        this.emptyHiddenSymbol,
+                        false
+                    );
+                }
+            }
+
+            this.title = title;
+        }
+
+        public void HighlightBoat(int index)
+        {
+            // Assure index is in range
+            Debug.Assert(index >= 0 && index < this.boats.Count);
+
+            foreach (BoardPosition boatBoardPosition in this.boats[index].boatTilesPositions)
+            {
+                this.HighlightBoardPosition(boatBoardPosition.x, boatBoardPosition.y);
+            }
+        }
+
+        public void HighlightBoardPosition(int x, int y)
+        {
+            highlightedBoardPositions.Add((x, y));
+        }
+
+        public void ClearBoardPositionsHighlights() { highlightedBoardPositions.Clear(); }
+
+        public bool IsHitPosition(int x, int y)
+        {
+            return this.boardPositions[x, y].hit;
         }
 
         public void RandomlyAddBoats(Boat[] boats)
@@ -72,7 +117,8 @@ namespace BattleBoats
                         j,
                         this.emptyHitSymbol,
                         this.emptyRevealedSymbol,
-                        this.emptyHiddenSymbol
+                        this.emptyHiddenSymbol,
+                        this.IsHitPosition(i, j)
                     );
                 }
             }
@@ -108,46 +154,42 @@ namespace BattleBoats
 
             foreach (Boat boat in boats)
             {
-                if (boat.PositionPartOfBoat(x, y)) { return true; }
+                if (boat.FireAt(x, y)) { return true; }
             }
 
             return false;
         }
 
-        public void DisplayBoard(bool revealed)
-        {
-            Console.Write(" |");
-            for (int i = 0; i < this.width; i++)
-            {
-                Console.Write(((i + 1) / 10 == 0 ? " " : Convert.ToString((i + 1) / 10)) + "|");
-            }
-
-            Console.Write("\n |");
-
-            for (int i = 0; i < this.width; i++)
-            {
-                Console.Write(Convert.ToString((i + 1) % 10) + "|");
-            }
-
-
-            for (int i = 0; i < this.height; i++)
-            {
-                Console.WriteLine();
-                Console.Write(Convert.ToChar(65 + i) + "|");
-                for (int j = 0; j < this.width; j++)
-                {
-                    boardPositions[i, j].CurrentSymbol(revealed).ConsoleWriteSymbol();
-                    Console.Write(" ");
-                }
-            }
-        }
-
         private void PlaceBoatOnBoard(Boat newBoat)
         {
-            foreach (BoardPosition boatBoardPosition in newBoat.BoatPositionsToBoardPositions())
+            foreach (BoardPosition boatBoardPosition in newBoat.boatTilesPositions)
             {
                 boardPositions[boatBoardPosition.x, boatBoardPosition.y] = boatBoardPosition;
             }
+        }
+
+        public string DisplayBoard(bool revealed)
+        {
+            string boardDisplay = string.Empty;
+            string tileToPlace = string.Empty;
+
+            boardDisplay += $" ---{this.title}---\n";
+            for (int i = 0; i < this.height; i++)
+            {
+                for (int j = 0; j < this.width; j++)
+                {
+                    tileToPlace = this.boardPositions[i, j].CurrentSymbol(revealed);
+                    if (this.highlightedBoardPositions.Contains((i, j)))
+                    {
+                        tileToPlace = HighlightColor.ColorStringBackground(tileToPlace);
+                    }
+                    boardDisplay += "  ";
+                    boardDisplay += tileToPlace;
+                }
+                boardDisplay += "\n\n";
+            }
+
+            return boardDisplay;
         }
     }
 }
