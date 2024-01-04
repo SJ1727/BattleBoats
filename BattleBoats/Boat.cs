@@ -12,6 +12,8 @@ namespace BattleBoats
 
     internal abstract class Boat
     {
+        public int boatTypeIdentifier = 0;
+        public int orientation = 0;
         public const int MAX_BOAT_SIZE = 5;
         public BoardPosition[] boatTilesPositions;
         protected BoardPosition headPosition;
@@ -21,9 +23,11 @@ namespace BattleBoats
         AnsiColor hitSymbolColor;
         AnsiColor revealedSymbolColor;
         AnsiColor hiddenSymbolColor;
-        bool destoryed = false;
+        protected char hitSymbolChar = '■';
+        protected char revealedSymbolChar = '■';
+        protected char hiddenSymbolChar = '.';
 
-        // Returns true if provided position if part of the boat, if not return false
+
         public bool PositionPartOfBoat(int x, int y)
         {
             foreach (BoardPosition position in boatTilesPositions)
@@ -34,7 +38,6 @@ namespace BattleBoats
             return false;
         }
 
-        // Returns true if boat overlaps with other boat, if not return false
         public bool Overlap(Boat otherBoat)
         {
             foreach (BoardPosition position in this.boatTilesPositions)
@@ -45,8 +48,6 @@ namespace BattleBoats
             return false;
         } 
 
-        // Return true if position is in bounds, returns false otherwise
-        // Bounds are inclusive of the lower bound and are exclusive of the upper bound
         public bool InsideBounds(int widthUpper, int heightUpper, int widthLower=0, int heightLower=0)
         {
             foreach (BoardPosition position in this.boatTilesPositions)
@@ -58,7 +59,6 @@ namespace BattleBoats
             return true;
         }
 
-        // Moves boat by x and y shit values
         public void ShiftBoat(int xShift, int yShift)
         {
             for (int i = 0; i < this.boatTilesPositions.Length; i++)
@@ -76,8 +76,6 @@ namespace BattleBoats
             this.headPosition = this.boatTilesPositions[0];
         }
 
-
-        // Sets the boat to a new position
         public void setBoatPosition((int x, int y) position)
         {
             for (int i = 0; i < this.boatTilesPositions.Length; i++)
@@ -95,9 +93,11 @@ namespace BattleBoats
             this.headPosition = this.boatTilesPositions[0];
         }
 
-        // Rotatets the boat 90 degrees clockwise
         public void rotateBoat()
         {
+            this.orientation++;
+            this.orientation %= 4;
+
             for (int i = 0; i < this.boatTilesPositions.Length; i++)
             {
                 this.boatTilesPositions[i] = new BoardPosition (
@@ -113,7 +113,6 @@ namespace BattleBoats
             this.headPosition = this.boatTilesPositions[0];
         }
 
-        // Checks if given positon is part of the boat, updates the hit states accordingly, returns true if hits boat otherwise return false
         public bool FireAt(int x, int y)
         {
             for (int i = 0; i < this.boatTilesPositions.Length; i++)
@@ -126,6 +125,24 @@ namespace BattleBoats
             return false;
         }
 
+        // TODO: Change the change color thing
+        public bool IsDestroyed()
+        {
+            foreach (BoardPosition boatTile in this.boatTilesPositions)
+            {
+                if (!boatTile.hit) { return false; }
+            }
+
+            this.hitSymbolColor = new AnsiColor(2, 0, 0);
+
+            foreach (BoardPosition boatTile in this.boatTilesPositions)
+            {
+                boatTile.ChangeHitSymbol(this.hitSymbolColor.ColorCharForeground(hitSymbolChar));
+            }
+
+            return true;
+        }
+
         public BoardPosition GetBoatBoardPosition(int x, int y)
         {
             foreach (BoardPosition boatBoardPosition in this.boatTilesPositions)
@@ -134,6 +151,11 @@ namespace BattleBoats
             }
 
             return null;
+        }
+
+        public BoardPosition getHeadPosition()
+        {
+            return this.headPosition;
         }
     }
 
@@ -145,9 +167,10 @@ namespace BattleBoats
 
         public Destroyer((int x, int y) headPosition)
         {
-            this.hitSymbol = hitSymbolColor.ColorCharForeground('■');
-            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground('.');
-            this.revealedSymbol = revealedSymbolColor.ColorCharForeground('■');
+            this.boatTypeIdentifier = 0;
+            this.hitSymbol = hitSymbolColor.ColorCharForeground(hitSymbolChar);
+            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground(hiddenSymbolChar);
+            this.revealedSymbol = revealedSymbolColor.ColorCharForeground(revealedSymbolChar);
             this.boatTilesPositions = new BoardPosition[]{
                 new BoardPosition(headPosition.x, headPosition.y, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
                 new BoardPosition(headPosition.x, headPosition.y + 1, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
@@ -164,9 +187,10 @@ namespace BattleBoats
 
         public Cruiser((int x, int y) headPosition)
         {
-            this.hitSymbol = hitSymbolColor.ColorCharForeground('■');
-            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground('.');
-            this.revealedSymbol = revealedSymbolColor.ColorCharForeground('■');
+            this.boatTypeIdentifier = 1;
+            this.hitSymbol = hitSymbolColor.ColorCharForeground(hitSymbolChar);
+            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground(hiddenSymbolChar);
+            this.revealedSymbol = revealedSymbolColor.ColorCharForeground(revealedSymbolChar);
             this.boatTilesPositions = new BoardPosition[]{
                 new BoardPosition(headPosition.x, headPosition.y, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
                 new BoardPosition(headPosition.x, headPosition.y + 1, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
@@ -184,9 +208,10 @@ namespace BattleBoats
 
         public Submarine((int x, int y) headPosition)
         {
-            this.hitSymbol = hitSymbolColor.ColorCharForeground('■');
-            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground('.');
-            this.revealedSymbol = revealedSymbolColor.ColorCharForeground('■');
+            this.boatTypeIdentifier = 2;
+            this.hitSymbol = hitSymbolColor.ColorCharForeground(hitSymbolChar);
+            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground(hiddenSymbolChar);
+            this.revealedSymbol = revealedSymbolColor.ColorCharForeground(revealedSymbolChar);
             this.boatTilesPositions = new BoardPosition[]{
                 new BoardPosition(headPosition.x, headPosition.y, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
                 new BoardPosition(headPosition.x, headPosition.y + 1, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
@@ -204,9 +229,10 @@ namespace BattleBoats
 
         public BattleShip((int x, int y) headPosition)
         {
-            this.hitSymbol = hitSymbolColor.ColorCharForeground('■');
-            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground('.');
-            this.revealedSymbol = revealedSymbolColor.ColorCharForeground('■');
+            this.boatTypeIdentifier = 3;
+            this.hitSymbol = hitSymbolColor.ColorCharForeground(hitSymbolChar);
+            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground(hiddenSymbolChar);
+            this.revealedSymbol = revealedSymbolColor.ColorCharForeground(revealedSymbolChar);
             this.boatTilesPositions = new BoardPosition[]{
                 new BoardPosition(headPosition.x, headPosition.y, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
                 new BoardPosition(headPosition.x, headPosition.y + 1, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
@@ -225,9 +251,10 @@ namespace BattleBoats
 
         public Carrier((int x, int y) headPosition)
         {
-            this.hitSymbol = hitSymbolColor.ColorCharForeground('■');
-            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground('.');
-            this.revealedSymbol = revealedSymbolColor.ColorCharForeground('■');
+            this.boatTypeIdentifier = 4;
+            this.hitSymbol = hitSymbolColor.ColorCharForeground(hitSymbolChar);
+            this.hiddenSymbol = hiddenSymbolColor.ColorCharForeground(hiddenSymbolChar);
+            this.revealedSymbol = revealedSymbolColor.ColorCharForeground(revealedSymbolChar);
             this.boatTilesPositions = new BoardPosition[]{
                 new BoardPosition(headPosition.x, headPosition.y, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
                 new BoardPosition(headPosition.x, headPosition.y + 1, this.hitSymbol, this.revealedSymbol, this.hiddenSymbol, false),
