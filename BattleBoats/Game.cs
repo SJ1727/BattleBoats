@@ -119,6 +119,8 @@ namespace BattleBoats
         {
             bool boatHit = false;
             string winner = string.Empty;
+
+            // Game loop
             while (!player1.ownBoard.AllBoatsDestroyed() && !player2.ownBoard.AllBoatsDestroyed())
             {
                 Save.SaveGame(player1, player2, turn, savePath);
@@ -138,6 +140,8 @@ namespace BattleBoats
                 }
             }
 
+
+            // Deletes save file after game ends
             if (File.Exists(savePath))
             {
                 File.Delete(savePath);
@@ -145,7 +149,8 @@ namespace BattleBoats
 
             winner = turn % 2 == 0 ? player1.name : player2.name;
 
-            Console.Write($"\u001b[38;5;127mThe winner is {winner}! Press enter to exit program: \u001b[38;5;231m");
+            // Display winner
+            Console.Write($"\n\u001b[38;5;127mThe winner is {winner}! Press enter to exit program: \u001b[38;5;231m");
             Console.ReadLine();
 
         }
